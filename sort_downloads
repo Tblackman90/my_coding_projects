@@ -1,0 +1,49 @@
+import os
+import time
+import shutil
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+# Define the directory to monitor and the destination directories for different file types, change path to correct folder
+source_directory = "/path/to/downloads"
+destination_directory = "/path/to/sorted_files"
+
+# Mapping of file extensions to destination folders
+file_type_folders = {
+    ".pdf": "PDFs",
+    ".txt": "TextFiles",
+    ".jpg": "Images",
+    ".png": "Images",
+    # Add more file types and corresponding folders as needed
+}
+
+class FileHandler(FileSystemEventHandler):
+    def on_created(self, event):
+        if event.is_directory:
+            return
+
+        file_path = event.src_path
+        file_extension = os.path.splitext(file_path)[1]
+
+        if file_extension in file_type_folders:
+            destination_folder = os.path.join(destination_directory, file_type_folders[file_extension])
+
+            # Create the destination folder if it doesn't exist
+            os.makedirs(destination_folder, exist_ok=True)
+
+            # Move the file to the appropriate folder
+            shutil.move(file_path, os.path.join(destination_folder, os.path.basename(file_path)))
+            print(f"Moved {file_path} to {destination_folder}")
+
+if __name__ == "__main__":
+    event_handler = FileHandler()
+    observer = Observer()
+    observer.schedule(event_handler, source_directory, recursive=False)
+    observer.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+        observer.join()
